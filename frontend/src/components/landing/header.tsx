@@ -10,6 +10,20 @@ import { useAuth } from '../../hooks/auth-context';
 
 export function Header() {
   const { user, logout, isLoading } = useAuth();
+
+  const scrollToSection = (sectionId: string) => {
+    // Check if we're on the homepage
+    if (window.location.pathname === '/') {
+      // We're on homepage, scroll to section
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // We're on another page, navigate to homepage with hash
+      window.location.href = `/#${sectionId}`;
+    }
+  };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -18,14 +32,14 @@ export function Header() {
         </Link>
         
         <nav className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="#about">About</Link>
+            <Button variant="ghost" onClick={() => scrollToSection('about')}>
+              About
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="#features">Features</Link>
+            <Button variant="ghost" onClick={() => scrollToSection('features')}>
+              Features
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="#faq">FAQ</Link>
+            <Button variant="ghost" onClick={() => scrollToSection('faq')}>
+              FAQ
             </Button>
           {user ? (
             <Button 
@@ -63,9 +77,15 @@ export function Header() {
                 <Link href="/" className="flex items-center gap-2 mb-4">
                   <Image src="/logo.png" alt="VeraChain Logo" width={160} height={40} className="h-10 w-auto" />
                 </Link>
-                <Link href="#about" className="hover:text-primary">About</Link>
-                <Link href="#features" className="hover:text-primary">Features</Link>
-                <Link href="#faq" className="hover:text-primary">FAQ</Link>
+                <button onClick={() => scrollToSection('about')} className="hover:text-primary text-left">
+                  About
+                </button>
+                <button onClick={() => scrollToSection('features')} className="hover:text-primary text-left">
+                  Features
+                </button>
+                <button onClick={() => scrollToSection('faq')} className="hover:text-primary text-left">
+                  FAQ
+                </button>
                 {user ? (
                   <Button 
                     variant="outline" 

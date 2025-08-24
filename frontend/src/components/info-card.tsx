@@ -1,4 +1,4 @@
-import { Star, IndianRupee } from 'lucide-react';
+import { Star, DollarSign } from 'lucide-react';
 import { Card, CardContent } from "./ui/card";
 import { cn } from '../lib/utils';
 
@@ -25,8 +25,8 @@ export function InfoCard({ name, cost, rating, reviews }: InfoCardProps) {
       <CardContent className="p-4 flex flex-col gap-4 flex-grow">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-                <IndianRupee className="h-6 w-6 text-foreground" />
-                <span className="text-2xl font-bold">{cost.toLocaleString('en-IN')}</span>
+                <DollarSign className="h-6 w-6 text-foreground" />
+                <span className="text-2xl font-bold">{cost.toLocaleString('en-US')}</span>
             </div>
         </div>
 
