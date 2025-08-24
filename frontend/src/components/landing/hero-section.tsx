@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section id="hero" className="relative py-20 md:py-32 text-center">
+    <section id="hero" className="relative py-20 md:py-30 text-center">
        <div
         className="absolute inset-0 -z-10 bg-grid-pattern"
         style={{ maskImage: 'radial-gradient(ellipse at center, transparent 20%, black)'}}
