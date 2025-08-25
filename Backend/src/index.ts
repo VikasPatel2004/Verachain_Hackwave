@@ -4,6 +4,9 @@ import jwt = require('jsonwebtoken');
 import { UserModel } from './Models/db';
 import * as dotenv from 'dotenv';
 import express,{Request,Response} from "express";
+import Sentiment from "sentiment";
+
+
 
 // Load environment variables from .env file
 dotenv.config();
@@ -35,9 +38,9 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-interface SeaAssessRequest {
-  placeName: string; // country name from frontend
-}
+// interface SeaAssessRequest {
+//   placeName: string; // country name from frontend
+// }
 
 // Function to get coordinates from country name
 // async function getCoordinatesByPlace(placeName: string): Promise<{ lat: number; lon: number }> {
@@ -65,6 +68,11 @@ interface SeaAssessRequest {
 //   };
 // }
 
+
+interface SeaAssessRequest {
+  placeName: string; // Place name from frontend
+}
+
 app.post("/sea/assess", async (req: Request, res: Response) => {
   try {
     const { placeName } = req.body as SeaAssessRequest;
@@ -90,7 +98,7 @@ app.post("/sea/assess", async (req: Request, res: Response) => {
         {
           parts: [
             {
-              text: `Analyze this forecast for risks and disruptions and give us 4-5 crisp points summarising the result of the prompt. Do not be vague be very specific. Also at the end recommend whether we should send our package or not: ${JSON.stringify(
+              text: `Analyze this forecast for risks and disruptions and give us 4-5 crisp points summarising the result of the prompt. Do not be vague, be very specific. Also at the end recommend whether we should send our package or not. Additionally, provide a risk score between -10 to 10 and a corresponding color code for the risk level: ${JSON.stringify(
                 weatherData
               )}`,
             },
@@ -100,7 +108,7 @@ app.post("/sea/assess", async (req: Request, res: Response) => {
     };
 
     const geminiResp = await fetch(
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,29 +123,117 @@ app.post("/sea/assess", async (req: Request, res: Response) => {
       throw new Error(`Gemini API Error: ${geminiData.error?.message || "Unknown error"}`);
     }
 
-    // 3. Extract Gemini AI analysis text
+    // 3. Extract Gemini AI analysis text, risk score, and assign color code based on risk level
     const geminiAssessment =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "No assessment received";
+    const riskScore = geminiData?.candidates?.[0]?.content?.parts?.[0]?.riskScore || 0; // Default to 0 if not provided
 
-    // 4. Return the Gemini assessment as JSON string for frontend display
+    // Assign color code based on risk score
+    let colorCode = "gray"; // Default color
+    if (riskScore <= -5) {
+      colorCode = "green"; // Least risk
+    } else if (riskScore > -5 && riskScore <= 5) {
+      colorCode = "yellow"; // Mid risk
+    } else if (riskScore > 5) {
+      colorCode = "red"; // High risk
+    }
+
+    // 4. Return the response with risk level and color code
     res.json({
       placeName,
       weatherData,
       geminiAssessment: JSON.stringify(geminiAssessment),
+      riskScore, // Risk score provided by Gemini
+      colorCode, // Color code based on risk score
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
+  }
+});
+
+
+app.post("/suppliers/risk-analysis", async (req: Request, res: Response) => {
+  try {
+    const { locationA, locationB } = req.body as {
+      
+      locationA: string;
+      locationB: string;
+    };
+
+    if (!locationA || !locationB) {
+      return res.status(400).json({ error: "Both locationA and locationB are required." });
+    }
+
+    const results = await Promise.all(
+      suppliers.map(async (supplier) => {
+        // Fetch weather data for the supplier's location
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+          supplier.location
+        )}&appid=${OPENWEATHER_API_KEY}`;
+        const weatherResp = await fetch(weatherUrl);
+
+        if (!weatherResp.ok) throw new Error(`Error fetching weather data for ${supplier.location}`);
+        const weatherData = await weatherResp.json();
+
+        // Send weather data to Gemini for risk assessment
+        const geminiPayload = {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Analyze the following supplier's details and weather data to calculate the risk percentage for transporting goods from ${locationA} to ${locationB}. Supplier details: ${JSON.stringify(
+                    supplier
+                  )}, Weather data: ${JSON.stringify(weatherData)}`,
+                },
+              ],
+            },
+          ],
+        };
+
+        const geminiResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(geminiPayload),
+          }
+        );
+
+        if (!geminiResp.ok) {
+          throw new Error(`Error fetching analysis from Gemini for ${supplier.name}`);
+        }
+
+        const geminiData = await geminiResp.json();
+        const riskPercentage = geminiData?.candidates?.[0]?.content?.parts?.[0]?.riskPercentage || 100; // Default to 100% if not provided
+
+        return {
+          ...supplier,
+          riskPercentage,
+        };
+      })
+    );
+
+    // Find the supplier with the least risk percentage
+    const bestSupplier = results.reduce((best, current) => {
+      return current.riskPercentage < (best as any).riskPercentage ? current : best;
+    }, results[0]);
+
+    res.json({
+      suppliers: results,
+      bestSupplier,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
-
-
-
 interface SupplierInterface {
   name: string;
   cost: number;
   ratings: number;
   reviews: number;
+  location: string;
 }
 
 interface SupplierAnalysisResult {
@@ -157,32 +253,37 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-const Suppliers: SupplierInterface[] = [
+const suppliers: SupplierInterface[] = [
   {
     name: "Reliable Transports",
     cost: 50000,
     ratings: 1.0,
     reviews: 5,
+    location: "Delhi",
   },
   {
     name: "Speedy Logistics",
     cost: 55000,
     ratings: 3.0,
     reviews: 1,
+    location: "Mumbai",
   },
   {
     name: "Quick Haulers",
     cost: 48000,
-    ratings: 7.0,
+    ratings: 4.2, // fixed (was 7.0)
     reviews: 3,
+    location: "Bangalore",
   },
   {
-    name: "Safe cargo Movers",
+    name: "Safe Cargo Movers",
     cost: 52000,
-    ratings: 9.0,
+    ratings: 4.8, // fixed (was 9.0)
     reviews: 2,
+    location: "Chennai",
   },
 ];
+
 
 // Calculate risk percentage based on cost, ratings, and reviews
 // function calculateRiskPercentage(
