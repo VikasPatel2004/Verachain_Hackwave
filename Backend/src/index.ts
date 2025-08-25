@@ -3,7 +3,7 @@ import mongoose = require('mongoose');
 import jwt = require('jsonwebtoken');
 import { UserModel } from './Models/db';
 import * as dotenv from 'dotenv';
-import express,{Request,Response} from "express";
+import express, { Request, Response } from "express";
 import Sentiment from "sentiment";
 
 
@@ -156,7 +156,7 @@ app.post("/sea/assess", async (req: Request, res: Response) => {
 app.post("/suppliers/risk-analysis", async (req: Request, res: Response) => {
   try {
     const { locationA, locationB } = req.body as {
-      
+
       locationA: string;
       locationB: string;
     };
@@ -225,8 +225,8 @@ app.post("/suppliers/risk-analysis", async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: (err as Error).message || "Internal server error" });
-  }
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
+  }
 });
 interface SupplierInterface {
   name: string;
@@ -283,294 +283,92 @@ const suppliers: SupplierInterface[] = [
     location: "Chennai",
   },
 ];
-
-
-// Calculate risk percentage based on cost, ratings, and reviews
-// function calculateRiskPercentage(
-//   supplier: SupplierInterface
-// ): SupplierAnalysisResult {
-//   const costValue = supplier.cost; // Directly use the cost as a number
-//   const ratings = supplier.ratings;
-//   const reviews = supplier.reviews;
-
-//   if (ratings < 0 || ratings > 10) {
-//     throw new Error(
-//       `Invalid rating value: ${ratings}. Must be between 0 and 10`
-//     );
-//   }
-
-//   if (reviews < 0) {
-//     throw new Error(`Invalid review count: ${reviews}. Must be non-negative`);
-//   }
-
-//   const costWeight = 0.5;
-//   const ratingWeight = 0.3;
-//   const reviewWeight = 0.2;
-
-//   const minCost = 40000;
-//   const maxCost = 60000;
-//   const normalizedCost = Math.max(
-//     0,
-//     Math.min(100, ((costValue - minCost) / (maxCost - minCost)) * 100)
-//   );
-//   const normalizedRating = (10 - ratings) * 10;
-//   const normalizedReviews =
-//     reviews === 0 ? 100 : Math.max(0, Math.min(100, (1 / (reviews + 1)) * 100));
-
-//   const weightedRiskScore =
-//     costWeight * normalizedCost +
-//     ratingWeight * normalizedRating +
-//     reviewWeight * normalizedReviews;
-
-//   const overallScore = 100 - weightedRiskScore;
-//   const riskPercentage = weightedRiskScore;
-
-//   let analysis: string;
-//   if (riskPercentage < 30) {
-//     analysis =
-//       "Low risk - Excellent choice with good balance of cost and quality";
-//   } else if (riskPercentage < 60) {
-//     analysis = "Medium risk - Reasonable option with some trade-offs";
-//   } else {
-//     analysis = "High risk - Consider alternatives or negotiate better terms";
-//   }
-
-//   analysis += `. Cost: ₹${costValue.toLocaleString()}, Rating: ${ratings}/10, Reviews: ${reviews}`;
-
-//   return {
-//     supplier: supplier.name,
-//     cost: costValue.toLocaleString(), // Convert number to string for display
-//     ratings: supplier.ratings,
-//     reviews: supplier.reviews,
-//     riskPercentage: Math.round(riskPercentage * 100) / 100,
-//     score: Math.round(overallScore * 100) / 100,
-//     analysis: analysis,
-//   };
-// }
-
-// // Route to analyze suppliers using basic maths and logic
-// app.post(
-//   "/api/analyze-suppliers",
-//   async (req: any, res: any): Promise<void> => {
-//     try {
-//       const analysisResults: SupplierAnalysisResult[] = Suppliers.map(
-//         (supplier) => calculateRiskPercentage(supplier)
-//       );
-
-//       // Sort by risk percentage (ascending - lower risk is better)
-//       analysisResults.sort((a, b) => a.riskPercentage - b.riskPercentage);
-
-//       // Find the best supplier (lowest risk percentage)
-//       const bestSupplier = analysisResults[0];
-
-//       const response: ApiResponse = {
-//         success: true,
-//         data: {
-//           allSuppliers: analysisResults,
-//           bestSupplier: bestSupplier,
-//           analysisDate: new Date().toISOString(),
-//           analysisMethod:
-//             "Basic mathematical risk assessment using cost, ratings, and reviews",
-//         },
-//       };
-
-//       res.json(response);
-//     } catch (error: unknown) {
-//       const errorMessage =
-//         error instanceof Error ? error.message : "Unknown error occurred";
-//       console.error("Error in supplier analysis:", errorMessage);
-
-//       const response: ApiResponse = {
-//         success: false,
-//         message: "Failed to analyze suppliers",
-//         error: errorMessage,
-//       };
-
-//       res.status(500).json(response);
-//     }
-//   }
-// );
-
-// // Get supplier analysis with detailed breakdown
-// app.get(
-//   "/api/supplier-analysis",
-//   async (req: any, res: any): Promise<void> => {
-//     try {
-//       const analysisResults: SupplierAnalysisResult[] = Suppliers.map(
-//         (supplier) => calculateRiskPercentage(supplier)
-//       );
-
-//       // Sort by risk percentage (ascending - lower risk is better)
-//       analysisResults.sort((a, b) => a.riskPercentage - b.riskPercentage);
-
-//       // Fetch risk factor from OpenWeatherAPI
-//       const weatherApiKey = process.env.OPENWEATHER_API_KEY;
-//       if (!weatherApiKey) {
-//         throw new Error("Missing OpenWeatherAPI key in environment variables");
-//       }
-
-      // const weatherResponse = await axios.get(
-      //   `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${weatherApiKey}`
-      // );
-
-      // const weatherRiskFactor = weatherResponse.data.main.temp / 100; // Example calculation based on temperature
-
-      // // Fetch news data from News API
-      // const newsApiKey = process.env.NEWS_API_KEY;
-      // if (!newsApiKey) {
-      //   throw new Error("Missing News API key in environment variables");
-      // }
-
-      // const newsResponse = await axios.get(
-      //   `https://newsapi.org/v2/everything?q=logistics&apiKey=${newsApiKey}`
-      // );
-
-      // const articles = newsResponse.data.articles;
-      // const sentiment = new Sentiment();
-
-      // Calculate average sentiment score for the articles
-      // const sentimentScores = articles.map((article: any) => {
-      //   const analysis = sentiment.analyze(
-      //     article.title + " " + article.description
-      //   );
-      //   return analysis.score;
-      // });
-
-      // const averageSentimentScore =
-      //   sentimentScores.length > 0
-      //     ? sentimentScores.reduce(
-      //         (sum: number, score: number) => sum + score,
-      //         0
-      //       ) / sentimentScores.length
-      //     : 0;
-
-      // const sentimentRiskFactor = 1 + averageSentimentScore / 10; // Adjust risk factor based on sentiment
-
-      // Adjust risk scores based on weather and sentiment risk factors
-      // const adjustedResults = analysisResults.map((result) => {
-      //   const adjustedRiskPercentage =
-      //     result.riskPercentage * weatherRiskFactor * sentimentRiskFactor;
-      //   return {
-      //     ...result,
-      //     riskPercentage: Math.round(adjustedRiskPercentage * 100) / 100,
-      //     analysis: `${result.analysis} Adjusted for weather risk factor: ${weatherRiskFactor.toFixed(
-      //       2
-      //     )}, sentiment risk factor: ${sentimentRiskFactor.toFixed(2)}`,
-      //   };
-      // });
-
-      // // Ensure adjustedResults is not empty before finding the best supplier
-      // if (adjustedResults.length === 0) {
-      //   throw new Error("No suppliers available for analysis");
-      // }
-
-      // Find the best supplier (lowest risk percentage)
-    //   const bestSupplier = adjustedResults.reduce((best, current) => {
-    //     return current.riskPercentage < best.riskPercentage ? current : best;
-    //   }, adjustedResults[0] as SupplierAnalysisResult);
-
-    //   const response: ApiResponse = {
-    //     success: true,
-    //     data: {
-    //       suppliers: adjustedResults,
-    //       totalSuppliers: adjustedResults.length,
-    //       bestSupplier: bestSupplier,
-    //       weatherRiskFactor: weatherRiskFactor.toFixed(2),
-    //       sentimentRiskFactor: sentimentRiskFactor.toFixed(2),
-    //       analysisDate: new Date().toISOString(),
-    //     },
-    //   };
-
-    //   res.json(response);
-    // } catch (error: unknown) {
-    //   const errorMessage =
-    //     error instanceof Error ? error.message : "Unknown error occurred";
-    //   console.error("Error getting supplier analysis:", errorMessage);
-
-//       const response: ApiResponse = {
-//         success: false,
-//         message: "Failed to get supplier analysis",
-//         error: errorMessage,
-//       };
-
-//       res.status(500).json(response);
-//     }
-//   }
-// );
-
-// Get analysis for a specific supplier
-
-/*
-app.get(
-  "/api/analyze-supplier/:name",
-  async (req: any, res: any): Promise<void> => {
-    try {
-      const supplierName = req.params.name || "";
-      const supplier = Suppliers.find(
-        (s) => s.name.toLowerCase() === supplierName.toLowerCase()
-      );
-
-      if (!supplier) {
-        const response: ApiResponse = {
-          success: false,
-          message: "Supplier not found",
-        };
-        res.status(404).json(response);
-        return;
-      }
-
-      const analysis = calculateRiskPercentage(supplier);
-
-      const response: ApiResponse = {
-        success: true,
-        data: analysis,
-      };
-
-      res.json(response);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      console.error("Error analyzing specific supplier:", errorMessage);
-
-      const response: ApiResponse = {
-        success: false,
-        message: "Failed to analyze supplier",
-        error: errorMessage,
-      };
-
-      res.status(500).json(response);
-    }
-  }
-);
-
-// Get all suppliers (for reference)
-app.get("/api/suppliers", async (req: any, res: any): Promise<void> => {
+app.post("/insurance/recommendations", async (req: Request, res: Response) => {
   try {
-    const response: ApiResponse = {
-      success: true,
-      data: Suppliers,
+    const { location1 } = req.body as { location1: string };
+
+    if (!location1 || typeof location1 !== "string") {
+      return res.status(400).json({
+        error: "Starting location (location1) is required and must be a string.",
+      });
+    }
+
+    const geminiPayload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: `For the location '${location1}', provide an array of 3 insurance recommendations.
+Return the result strictly as a JSON array of objects with the following fields:
+[
+  {
+    "type": "...",
+    "risksCovered": "...",
+    "uniqueness": "...",
+    "facilities": "...",
+    "whyAsset": "...",
+    "description": "..."
+  }
+]`,
+            },
+          ],
+        },
+      ],
     };
 
-    res.json(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error getting suppliers:", errorMessage);
+    const geminiResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload),
+      }
+    );
 
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to get suppliers",
-      error: errorMessage,
-    };
+    if (!geminiResp.ok) {
+      const errorText = await geminiResp.text();
+      throw new Error(`Gemini API Error ${geminiResp.status}: ${errorText}`);
+    }
 
-    res.status(500).json(response);
+    const geminiData = await geminiResp.json();
+
+    // ✅ Safely extract and clean the response text
+    let rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    rawText = rawText.replace(/```json|```/g, "").trim();
+
+    let recommendations;
+    try {
+      recommendations = JSON.parse(rawText);
+      if (!Array.isArray(recommendations)) {
+        throw new Error("Parsed content is not an array");
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse Gemini response as JSON:", parseError);
+      recommendations = [
+        {
+          type: "Unknown",
+          risksCovered: "Unknown",
+          uniqueness: "Unknown",
+          facilities: "Unknown",
+          whyAsset: "Unknown",
+          description: rawText || "No valid response received.",
+        },
+      ];
+    }
+
+    res.json({
+      location: location1,
+      recommendations,
+    });
+  } catch (err) {
+    console.error("Internal error:", err);
+    res.status(500).json({
+      error: (err as Error).message || "Internal server error",
+    });
   }
 });
-*/
 
-// Authentication Routes
 
-// Register endpoint
 app.post('/api/auth/register', async (req: any, res: any) => {
   try {
     const { email, username, password, role } = req.body;
@@ -636,7 +434,7 @@ app.post('/api/auth/login', async (req: any, res: any) => {
     });
 
     if (!user) {
-      const errorResponse = { 
+      const errorResponse = {
         success: false,
         message: 'Invalid credentials',
         error: 'Invalid username or password'
@@ -648,7 +446,7 @@ app.post('/api/auth/login', async (req: any, res: any) => {
     // Check password
     const isPasswordValid = await (user as any).comparePassword(password);
     if (!isPasswordValid) {
-      const errorResponse = { 
+      const errorResponse = {
         success: false,
         message: 'Invalid credentials',
         error: 'Invalid username or password'
@@ -695,14 +493,14 @@ app.get('/api/users', async (req: any, res: any) => {
 app.get('/api/auth/me', async (req: any, res: any) => {
   try {
     const token = req.headers.authorization;
-    
+
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     const user = await UserModel.findById(decoded.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
